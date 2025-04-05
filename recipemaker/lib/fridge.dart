@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'GenerateRecipePage.dart';
+import 'RecipePage.dart';
 
 class FridgePage extends StatefulWidget {
   const FridgePage({super.key});
@@ -75,12 +75,7 @@ class _FridgePageState extends State<FridgePage> {
     return ingredientsByCategory.values.expand((e) => e).toList();
   }
 
-  void _navigateToRecipePage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const GenerateRecipePage()),
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -237,10 +232,24 @@ class _FridgePageState extends State<FridgePage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _navigateToRecipePage,
+        onPressed: () {
+          if (selectedForRecipe.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RecipePage(ingredients: selectedForRecipe),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Select ingredients to cook with.")),
+            );
+          }
+        },
         label: const Text("Generate Recipe"),
         icon: const Icon(Icons.restaurant_menu),
       ),
+
     );
   }
 }
