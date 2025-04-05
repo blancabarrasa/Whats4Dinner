@@ -38,6 +38,8 @@ def get_recipe_info(recipe_id):
     return {
         "title": data.get("title"),
         "image": data.get("image"),
+        "vegetarian": data.get("vegetarian"),
+        "time": data.get("readyInMinutes"),
         "ingredients": [i["name"] for i in data.get("extendedIngredients", [])],
         "instructions": data.get("instructions"),
     }
