@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from spoonacular_api import find_recipes_by_ingredients, get_recipe_info
+from recipes.spoonacular_api import find_recipes_by_ingredients, get_recipe_info
 from db.models import init_db
 
 app = Flask(__name__)
