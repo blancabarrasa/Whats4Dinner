@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'RecipePage.dart';
+import 'services/food_service.dart';
 
 class FridgePage extends StatefulWidget {
   const FridgePage({super.key});
@@ -9,56 +10,71 @@ class FridgePage extends StatefulWidget {
 }
 
 class _FridgePageState extends State<FridgePage> {
-  final Map<String, List<String>> ingredientsByCategory = {
-    'Staples': [
-      'Salt', 'Pepper', 'Sugar', 'Flour (all-purpose)', 'Vegetable Oil',
-      'Olive Oil', 'Butter', 'Eggs', 'Milk', 'Water', 'Yeast',
-      'Baking Powder', 'Baking Soda', 'Cornstarch', 'Honey', 'Maple Syrup',
-      'Vinegar (white)', 'Soy Sauce', 'Worcestershire Sauce', 'Mayonnaise',
-      'Ketchup', 'Mustard', 'Jam/Jelly', 'Peanut Butter', 'Nutella',
-      'Canola Oil', 'Shortening', 'Coconut Oil', 'Sesame Oil', 'Rice Vinegar',
-      'Balsamic Vinegar', 'Lemon Juice', 'Lime Juice', 'Tomato Paste',
-      'Tomato Sauce', 'Canned Tomatoes', 'Diced Tomatoes', 'Crushed Tomatoes',
-      'Pureed Tomatoes', 'Broth (chicken)', 'Bouillon Cubes',
-      'Instant Coffee', 'Tea Bags', 'Cocoa Powder'
-    ],
-    'Produce': [
-      'Potatoes', 'Onions', 'Garlic', 'Carrots', 'Celery', 'Spinach',
-      'Lettuce', 'Tomatoes', 'Bananas', 'Apples', 'Oranges', 'Lemons',
-      'Limes', 'Avocado', 'Broccoli', 'Cauliflower', 'Zucchini',
-      'Bell Peppers', 'Cucumber', 'Asparagus', 'Mushrooms', 'Peas', 'Corn',
-      'Sweet Potatoes', 'Radishes', 'Beets', 'Cabbage', 'Brussels Sprouts',
-      'Peaches', 'Pears', 'Strawberries', 'Blueberries', 'Raspberries',
-      'Blackberries', 'Mangoes', 'Pineapple', 'Grapes', 'Watermelon', 'Melon'
-    ],
-    'Dairy & Alternatives': [
-      'Cheese (cheddar)', 'Yogurt', 'Parmesan Cheese', 'Cheddar Cheese',
-      'Mozzarella Cheese', 'Cream Cheese', 'Butter', 'Almond Milk',
-      'Soy Milk', 'Oat Milk', 'Cashew Milk'
-    ],
-    'Meat & Alternatives': [
-      'Chicken', 'Beef', 'Pork', 'Salmon', 'Tofu'
-    ],
-  };
-
-  final List<String> fridgeContents = [];
-  final List<String> selectedForRecipe = [];
+  final FoodService _foodService = FoodService();
+  Map<String, List<String>> ingredientsByCategory = {};
+  List<String> fridgeContents = [];
+  List<String> selectedForRecipe = [];
   String searchQuery = '';
   final TextEditingController searchController = TextEditingController();
+  bool isLoading = true;
 
-  void _addToFridge(String ingredient) {
-    setState(() {
-      if (!fridgeContents.contains(ingredient)) {
-        fridgeContents.add(ingredient);
-      }
-    });
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
   }
 
-  void _removeFromFridge(String ingredient) {
-    setState(() {
-      fridgeContents.remove(ingredient);
-      selectedForRecipe.remove(ingredient);
-    });
+  Future<void> _loadData() async {
+    try {
+      setState(() => isLoading = true);
+      final foods = await _foodService.getFoodsByCategory();
+      final contents = await _foodService.getFridgeContents();
+      setState(() {
+        ingredientsByCategory = foods;
+        fridgeContents = contents;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() => isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading data: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _addToFridge(String ingredient) async {
+    try {
+      await _foodService.addToFridge(ingredient);
+      setState(() {
+        if (!fridgeContents.contains(ingredient)) {
+          fridgeContents.add(ingredient);
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding to fridge: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _removeFromFridge(String ingredient) async {
+    try {
+      await _foodService.removeFromFridge(ingredient);
+      setState(() {
+        fridgeContents.remove(ingredient);
+        selectedForRecipe.remove(ingredient);
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error removing from fridge: $e')),
+        );
+      }
+    }
   }
 
   void _toggleRecipeIngredient(String ingredient) {
@@ -75,10 +91,16 @@ class _FridgePageState extends State<FridgePage> {
     return ingredientsByCategory.values.expand((e) => e).toList();
   }
 
-
-
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     final allIngredients = _getAllIngredients();
     final filteredResults = searchQuery.isEmpty
         ? []
@@ -92,6 +114,12 @@ class _FridgePageState extends State<FridgePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("What's in your fridge?"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadData,
+          ),
+        ],
       ),
       body: Row(
         children: [
@@ -249,7 +277,6 @@ class _FridgePageState extends State<FridgePage> {
         label: const Text("Generate Recipe"),
         icon: const Icon(Icons.restaurant_menu),
       ),
-
     );
   }
 }

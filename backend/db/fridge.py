@@ -2,7 +2,7 @@ import sqlite3
 
 
 def add_to_fridge(food_name):
-    conn = sqlite3.connect("whats4dinner.db")
+    conn = sqlite3.connect("db/whats4dinner.db")
     c = conn.cursor()
 
     c.execute("SELECT id FROM foods WHERE name = ?", (food_name,))
@@ -17,9 +17,22 @@ def add_to_fridge(food_name):
     conn.close()
 
 
+def remove_from_fridge(food_name):
+    conn = sqlite3.connect("db/whats4dinner.db")
+    c = conn.cursor()
+
+    c.execute("SELECT id FROM foods WHERE name = ?", (food_name,))
+    result = c.fetchone()
+    if result:
+        food_id = result[0]
+        c.execute("DELETE FROM fridge WHERE food_id = ?", (food_id,))
+    
+    conn.commit()
+    conn.close()
+
 
 def get_fridge_contents():
-    conn = sqlite3.connect("whats4dinner.db")
+    conn = sqlite3.connect("db/whats4dinner.db")
     c = conn.cursor()
 
     c.execute('''
