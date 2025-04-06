@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'RecipeDetailPage.dart'; // Make sure this is created
+import 'RecipeDetailPage.dart';
 
 class RecipePage extends StatefulWidget {
   final List<String> ingredients;
@@ -52,6 +52,18 @@ class _RecipePageState extends State<RecipePage> {
     }
   }
 
+  Widget buildIngredientList(String title, List<dynamic> ingredients) {
+    return ExpansionTile(
+      title: Text(title),
+      children: ingredients
+          .map<Widget>((ingredient) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Text("• ${ingredient['original']}"),
+              ))
+          .toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,25 +76,38 @@ class _RecipePageState extends State<RecipePage> {
                   itemCount: recipes.length,
                   itemBuilder: (context, index) {
                     final recipe = recipes[index];
+                    final usedIngredients = recipe['usedIngredients'] ?? [];
+                    final missedIngredients = recipe['missedIngredients'] ?? [];
+
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      child: ListTile(
-                        title: Text(recipe['title']),
-                        subtitle: Text(
-                          '${recipe['usedIngredientCount']} used, '
-                          '${recipe['missedIngredientCount']} missing',
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => RecipeDetailPage(
-                                recipeId: recipe['id'],
-                                title: recipe['title'],
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ListTile(
+                              title: Text(recipe['title']),
+                              subtitle: Text(
+                                '${recipe['usedIngredientCount']} used, '
+                                '${recipe['missedIngredientCount']} missing',
                               ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => RecipeDetailPage(
+                                      recipeId: recipe['id'],
+                                      title: recipe['title'],
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
+                            buildIngredientList("🟢 Ingredients You Have", usedIngredients),
+                            buildIngredientList("🔴 Ingredients You Need", missedIngredients),
+                          ],
+                        ),
                       ),
                     );
                   },
